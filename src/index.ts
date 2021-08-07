@@ -10,6 +10,7 @@ const handleRequest = async (event: FetchEvent) => {
   const { request } = event
   if (request.method !== 'GET') throw new MethodNotAllowedError()
   const { pathname } = new URL(request.url)
+  if (pathname === '/favicon.ico') throw new NotFoundError()
   const matches = pathname.match(/^\/([a-zA-Z90-9-.]+)$/)
   if (!matches) throw new NotFoundError()
   const domain = matches[1]
