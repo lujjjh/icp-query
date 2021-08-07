@@ -6,6 +6,10 @@ addEventListener('fetch', (event) => {
   event.respondWith(withCors(withErrorHandler(handleRequest))(event))
 })
 
+addEventListener('scheduled', (event) => {
+  event.waitUntil(handleSchedule(event))
+})
+
 const handleRequest = async (event: FetchEvent) => {
   const { request } = event
   if (request.method !== 'GET') throw new MethodNotAllowedError()
@@ -18,6 +22,11 @@ const handleRequest = async (event: FetchEvent) => {
   return new Response(JSON.stringify(result), {
     headers: { 'content-type': 'application/json; charset=utf-8', 'cache-control': 'public, max-age=60' },
   })
+}
+
+const handleSchedule = async (event: ScheduledEvent) => {
+  // TODO: refine the parameter type
+  await getToken(event as unknown as FetchEvent)
 }
 
 const getToken = async (event: FetchEvent) => {
