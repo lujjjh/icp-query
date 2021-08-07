@@ -1,0 +1,16 @@
+{
+  "name": "icp-query",
+  "private": true,
+  "main": "dist/index.js",
+  "scripts": {
+    "dev": "wrangler dev",
+    "build": "tsup src/index.ts --sourcemap"
+  },
+  "keywords": [],
+  "author": "Jiahao Lu <lujjjh@gmail.com>",
+  "devDependencies": {
+    "@cloudflare/workers-types": "^2.2.2",
+    "tsup": "^4.13.1",
+    "typescript": "^4.3.5"
+  }
+}

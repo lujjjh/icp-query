@@ -1,0 +1,14 @@
+name = "icp-query"
+type = "javascript"
+workers_dev = true
+
+[[kv_namespaces]]
+binding = "cache"
+preview_id = "c435166f0b3149c79a1b63f2822a65b7"
+id = "c435166f0b3149c79a1b63f2822a65b7"
+
+[build]
+command = "npm install && npm run build"
+
+[build.upload]
+format = "service-worker"
