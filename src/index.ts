@@ -64,6 +64,7 @@ const _queryIcp = async (event: FetchEvent, domain: string): Promise<_QueryIcpRe
       throw error
     }
   })()
+  event.waitUntil($result)
   result = staleResult ?? (await $result)
   event.waitUntil(
     $result.then((result) =>
