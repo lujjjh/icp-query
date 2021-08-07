@@ -54,14 +54,16 @@ const _queryIcp = async (event: FetchEvent, domain: string): Promise<_QueryIcpRe
     cache.get<_QueryIcpResult>(staleKey, 'json'),
   ])
   if (result !== null) return result
-  const token = await $token
-  const $result = icp.queryIcp(token, domain).then(
-    (result) => ({ result }),
-    (error) => {
+  const $result = (async () => {
+    const token = await $token
+    try {
+      const result = await icp.queryIcp(token, domain)
+      return { result }
+    } catch (error) {
       if (error instanceof HttpError && error.cachable) return { error }
       throw error
     }
-  )
+  })()
   result = staleResult ?? (await $result)
   event.waitUntil(
     $result.then((result) =>
