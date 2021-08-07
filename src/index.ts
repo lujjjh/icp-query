@@ -23,7 +23,10 @@ const getToken = async (event: FetchEvent) => {
   // TODO: fix race conditions when "Durable Objects" is available
   const freshKey = 'token'
   const staleKey = 'stale:token'
-  let [token, staleToken] = await Promise.all([cache.get(freshKey), cache.get(staleKey)])
+  let [token, staleToken] = await Promise.all([
+    cache.get(freshKey, { cacheTtl: 60 }),
+    cache.get(staleKey, { cacheTtl: 60 }),
+  ])
   if (token !== null) return token
   const $token = icp.getToken()
   token = staleToken ?? (await $token)
