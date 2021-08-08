@@ -53,6 +53,15 @@ export class InternalServerError extends HttpError {
   }
 }
 
+export class TimeoutError extends HttpError {
+  status = 504
+  code = 'TimeoutError'
+
+  constructor() {
+    super('Operation timed out.')
+  }
+}
+
 export class IcpNotFoundError extends HttpError {
   status = 404
   code = 'IcpNotFoundError'

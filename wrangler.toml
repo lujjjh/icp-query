@@ -7,12 +7,11 @@ binding = "cache"
 preview_id = "c435166f0b3149c79a1b63f2822a65b7"
 id = "c435166f0b3149c79a1b63f2822a65b7"
 
-# havn't figured out why this doesn't work, manually set up on the dashboard
-#[triggers]
-#crons = ["*/5 * * * *"]
+[triggers]
+crons = ["* * * * *"]
 
 [build]
-command = "npm install && npm run build"
+watch_dir = "dist"
 
 [build.upload]
 format = "service-worker"

@@ -1,5 +1,5 @@
 import { withCors } from './cors'
-import { HttpError, MethodNotAllowedError, NotFoundError, withErrorHandler } from './errors'
+import { HttpError, MethodNotAllowedError, NotFoundError, TimeoutError, withErrorHandler } from './errors'
 import * as icp from './icp'
 
 addEventListener('fetch', (event) => {
@@ -18,7 +18,14 @@ const handleRequest = async (event: FetchEvent) => {
   const matches = pathname.match(/^\/([a-zA-Z90-9-.]+)$/)
   if (!matches) throw new NotFoundError()
   const domain = matches[1]
-  const result = await queryIcp(event, domain)
+  const result = await Promise.race([
+    queryIcp(event, domain),
+    new Promise<never>((_resolve, reject) => {
+      setTimeout(() => {
+        reject(new TimeoutError())
+      }, 10000)
+    }),
+  ])
   return new Response(JSON.stringify(result), {
     headers: { 'content-type': 'application/json; charset=utf-8', 'cache-control': 'public, max-age=60' },
   })
