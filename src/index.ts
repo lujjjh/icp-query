@@ -77,8 +77,8 @@ const _queryIcp = async (event: FetchEvent, domain: string): Promise<_QueryIcpRe
       const result = await icp.queryIcp(token, domain)
       return { result }
     } catch (error) {
-      if (error instanceof HttpError && error.cachable) return { error }
-      throw error
+      if (!(error instanceof HttpError && error.cachable)) throw error
+      return { error }
     }
   })()
   event.waitUntil($result)
