@@ -5,7 +5,7 @@ workers_dev = true
 
 [[kv_namespaces]]
 binding = "cache"
-preview_id = "c435166f0b3149c79a1b63f2822a65b7"
+preview_id = "6326f8f6a09b4c328bef795a284b97d3"
 id = "c435166f0b3149c79a1b63f2822a65b7"
 
 [triggers]

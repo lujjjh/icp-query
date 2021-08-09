@@ -1,6 +1,8 @@
+import { ExtendableEvent, withCache } from './cache'
 import { withCors } from './cors'
-import { HttpError, MethodNotAllowedError, NotFoundError, TimeoutError, withErrorHandler } from './errors'
+import { IcpNotFoundError, MethodNotAllowedError, NotFoundError, TimeoutError, withErrorHandler } from './errors'
 import * as icp from './icp'
+import { withTimeout } from './timeout'
 
 addEventListener('fetch', (event) => {
   event.respondWith(withCors(withErrorHandler(handleRequest))(event))
@@ -18,84 +20,43 @@ const handleRequest = async (event: FetchEvent) => {
   const matches = pathname.match(/^\/([a-zA-Z90-9-.]+)$/)
   if (!matches) throw new NotFoundError()
   const domain = matches[1]
-  const result = await Promise.race([
-    queryIcp(event, domain),
-    new Promise<never>((_resolve, reject) => {
-      setTimeout(() => {
-        reject(new TimeoutError())
-      }, 10000)
-    }),
-  ])
+  const result = await queryIcp(event, domain)
   return new Response(JSON.stringify(result), {
     headers: { 'content-type': 'application/json; charset=utf-8', 'cache-control': 'public, max-age=60' },
   })
 }
 
 const handleSchedule = async (event: ScheduledEvent) => {
-  // TODO: refine the parameter type
-  await getToken(event as unknown as FetchEvent)
+  await getToken(event)
 }
 
-const getToken = async (event: FetchEvent) => {
-  // TODO: fix race conditions when "Durable Objects" is available
-  const freshKey = 'token'
-  const staleKey = 'stale:token'
-  let [token, staleToken] = await Promise.all([
-    cache.get(freshKey, { cacheTtl: 60 }),
-    cache.get(staleKey, { cacheTtl: 60 }),
-  ])
-  if (token !== null) return token
-  const $token = icp.getToken()
-  token = staleToken ?? (await $token)
-  event.waitUntil(
-    $token.then((token) =>
-      Promise.all([
-        cache.put(freshKey, token, { expirationTtl: 120 }),
-        cache.put(staleKey, token, { expirationTtl: 240 }),
-      ])
-    )
-  )
-  return token
-}
+const getToken = withCache(
+  withTimeout((_event: ExtendableEvent) => icp.getToken(), 10000),
+  {
+    cacheKeyPrefix: 'token',
+    maxAge: 150,
+    staleWhileRevalidate: 120,
+  }
+)
 
-type _QueryIcpResult = { result: icp.QueryIcpResult } | { error: Error }
+type _QueryIcpResult = { result: icp.QueryIcpResult } | { notFound: true }
 
-const _queryIcp = async (event: FetchEvent, domain: string): Promise<_QueryIcpResult> => {
-  // TODO: fix race conditions when "Durable Objects" is available
-  const freshKey = `queryIcp:${domain}`
-  const staleKey = `stale:queryIcp:${domain}`
-  const $token = getToken(event)
-  event.waitUntil($token)
-  let [result, staleResult] = await Promise.all([
-    cache.get<_QueryIcpResult>(freshKey, 'json'),
-    cache.get<_QueryIcpResult>(staleKey, 'json'),
-  ])
-  if (result !== null) return result
-  const $result = (async () => {
-    const token = await $token
+const _queryIcp = withCache(
+  async (event: ExtendableEvent, domain: string): Promise<_QueryIcpResult> => {
+    const token = await getToken(event)
     try {
       const result = await icp.queryIcp(token, domain)
       return { result }
     } catch (error) {
-      if (!(error instanceof HttpError && error.cachable)) throw error
-      return { error }
+      if (error instanceof IcpNotFoundError) return { notFound: true }
+      throw error
     }
-  })()
-  event.waitUntil($result)
-  result = staleResult ?? (await $result)
-  event.waitUntil(
-    $result.then((result) =>
-      Promise.all([
-        cache.put(freshKey, JSON.stringify(result), { expirationTtl: 'error' in result ? 600 : 3600 }),
-        cache.put(staleKey, JSON.stringify(result), { expirationTtl: 24 * 3600 }),
-      ])
-    )
-  )
-  return result
-}
+  },
+  { cacheKeyPrefix: 'queryIcp', maxAge: 600, staleWhileRevalidate: 24 * 3600 }
+)
 
-const queryIcp = async (event: FetchEvent, domain: string) => {
+const queryIcp = async (event: ExtendableEvent, domain: string) => {
   const resultOrError = await _queryIcp(event, domain)
-  if ('error' in resultOrError) throw resultOrError.error
+  if ('notFound' in resultOrError) throw new IcpNotFoundError()
   return resultOrError.result
 }
