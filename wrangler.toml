@@ -1,5 +1,6 @@
 name = "icp-query"
 type = "javascript"
+account_id = "3f3f7b6b86669a040fcfbf088dc613ae"
 workers_dev = true
 
 [[kv_namespaces]]
