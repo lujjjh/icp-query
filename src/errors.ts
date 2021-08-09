@@ -10,13 +10,13 @@ export abstract class HttpError extends Error {
   }
 
   toJSON() {
-    const { status, code, message } = this
-    return { status, code, message }
+    const { code, message } = this
+    return { code, message }
   }
 
   toResponse() {
-    const { status, code, message } = this
-    return new Response(JSON.stringify({ code, message }), {
+    const { status } = this
+    return new Response(JSON.stringify(this), {
       status,
       headers: {
         'cache-control': 'no-cache',
@@ -76,7 +76,7 @@ export const withErrorHandler: Middleware = (f) => async (event) => {
   try {
     return await f(event)
   } catch (error) {
-    if (typeof error === 'object' && 'code' in error) return HttpError.prototype.toResponse.call(error)
+    if (error instanceof HttpError) return error.toResponse()
     return new InternalServerError(error.message, error.stack).toResponse()
   }
 }
