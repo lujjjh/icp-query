@@ -3,7 +3,6 @@ import type { Middleware } from './middleware'
 export abstract class HttpError extends Error {
   public readonly status: number = 500
   public abstract readonly code: string
-  public readonly cachable: boolean = false
 
   constructor(message?: string) {
     super(message)
@@ -65,7 +64,6 @@ export class TimeoutError extends HttpError {
 export class IcpNotFoundError extends HttpError {
   status = 404
   code = 'IcpNotFoundError'
-  cachable = true
 
   constructor() {
     super('No licenses found.')
